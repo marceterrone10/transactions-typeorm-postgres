@@ -1,31 +1,32 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { User } from '../users/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
+import { BaseService } from 'src/config/base.service';
+import { getTransactionalRepo, runInTransaction } from 'src/common/utils/transaction.util';
 
 @Injectable()
-export class OrdersService {
+export class OrdersService extends BaseService<Order> {
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
-    private dataSource: DataSource
-  ) { }
+    dataSource: DataSource,
+  ) {
+    super(dataSource, orderRepository);
+  }
 
-  async createOrderWithQueryRunner(createOrderDto: CreateOrderDto): Promise<Order> {
-    const queryRunner = this.dataSource.createQueryRunner();
+  async createOrderWithTransaction(createOrderDto: CreateOrderDto): Promise<Order> {
+    return runInTransaction(this.dataSource, async (queryRunner) => {
+      // Obtener repositorios transaccionales
+      const userRepo = getTransactionalRepo(queryRunner, User);
+      const orderRepo = getTransactionalRepo(queryRunner, Order);
 
-    // Conectar y comenzar la transacción
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const user = await queryRunner.manager.findOne(User, { where: { id: createOrderDto.userId } });
+      // Buscar usuario
+      const user = await userRepo.findOne({ where: { id: createOrderDto.userId } });
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -36,48 +37,21 @@ export class OrdersService {
       }
 
       // Crear orden
-      const order = queryRunner.manager.create(Order, {
+      const order = orderRepo.create({
         userId: user.id,
         amount: createOrderDto.amount,
         description: createOrderDto.description,
       });
-      await queryRunner.manager.save(order);
+      await orderRepo.save(order);
 
       // Actualizar balance del usuario
       user.balance = Number(user.balance) - createOrderDto.amount;
-      await queryRunner.manager.save(user);
-
-      // Confirmar transacción
-      await queryRunner.commitTransaction();
+      await userRepo.save(user);
 
       return order;
-
-    } catch (err) {
-      // Si hay error, revertir transacción
-      await queryRunner.rollbackTransaction();
-      if (err instanceof BadRequestException) {
-        throw err;
-      }
-      throw new InternalServerErrorException('Error creating order');
-    } finally {
-      // Liberar recursos
-      await queryRunner.release();
-    }
+    });
   }
 
-  findAll() {
-    return `This action returns all orders`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
-  }
-
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} order`;
-  }
+  // findAll, findOne, update, remove ya están en BaseService
+  // Sobreescribir los métodos si es necesario
 }

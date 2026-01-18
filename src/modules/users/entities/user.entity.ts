@@ -1,12 +1,9 @@
+import { BaseEntity } from "src/config/base.entity";
 import { Order } from "src/modules/orders/entities/order.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany } from "typeorm";
 
 @Entity()
-export class User {
-
-
-    @PrimaryGeneratedColumn()
-    id: number;
+export class User extends BaseEntity {
 
     @Column()
     name: string;

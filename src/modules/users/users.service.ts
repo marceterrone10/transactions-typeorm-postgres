@@ -1,34 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { BaseService } from 'src/config/base.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
-export class UsersService {
+export class UsersService extends BaseService<User> {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-  ) { }
-  async create(createUserDto: CreateUserDto) {
-    const user = this.userRepository.create(createUserDto);
-    return this.userRepository.save(user);
+    userRepository: Repository<User>,
+    dataSource: DataSource,
+  ) {
+    super(dataSource, userRepository);
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async createUser(createUserDto: CreateUserDto) {
+    return this.repository.save(createUserDto);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+  // Todos los métodos CRUD (create, findAll, findOne, update, remove) 
+  // ya están disponibles desde BaseService
 }

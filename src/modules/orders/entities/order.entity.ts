@@ -1,12 +1,10 @@
+import { BaseEntity } from "src/config/base.entity";
 import { User } from "src/modules/users/entities/user.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 
 
 @Entity()
-export class Order {
-
-    @PrimaryGeneratedColumn()
-    id: number;
+export class Order extends BaseEntity {
 
     @Column()
     userId: number;
@@ -16,9 +14,6 @@ export class Order {
 
     @Column()
     description: string;
-
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
 
     @ManyToOne(() => User, user => user.orders)
     @JoinColumn({ name: 'userId' })
