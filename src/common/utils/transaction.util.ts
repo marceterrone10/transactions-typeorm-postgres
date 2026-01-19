@@ -8,7 +8,7 @@ export async function runInTransaction<R>(
     dataSource: DataSource,
     operation: (queryRunner: QueryRunner) => Promise<R>,
 ): Promise<R> {
-    const queryRunner = this.dataSource.createQueryRunner();
+    const queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 

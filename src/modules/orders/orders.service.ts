@@ -7,6 +7,8 @@ import { User } from '../users/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { BaseService } from 'src/config/base.service';
 import { getTransactionalRepo, runInTransaction } from 'src/common/utils/transaction.util';
+import { APP_CONSTANTS } from 'src/common/constants/constants';
+import { CreateOrderResponse } from './interfaces/create-order-response.interface';
 
 @Injectable()
 export class OrdersService extends BaseService<Order> {
@@ -19,7 +21,7 @@ export class OrdersService extends BaseService<Order> {
     super(dataSource, orderRepository);
   }
 
-  async createOrderWithTransaction(createOrderDto: CreateOrderDto): Promise<Order> {
+  async createOrderWithTransaction(createOrderDto: CreateOrderDto): Promise<CreateOrderResponse> {
     return runInTransaction(this.dataSource, async (queryRunner) => {
       // Obtener repositorios transaccionales
       const userRepo = getTransactionalRepo(queryRunner, User);
@@ -29,11 +31,11 @@ export class OrdersService extends BaseService<Order> {
       const user = await userRepo.findOne({ where: { id: createOrderDto.userId } });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException(APP_CONSTANTS.USERS.NOT_FOUND);
       }
 
       if (Number(user.balance) < Number(createOrderDto.amount)) {
-        throw new BadRequestException('Insufficient balance');
+        throw new BadRequestException(APP_CONSTANTS.ORDERS.NOT_ENOUGH_BALANCE);
       }
 
       // Crear orden
@@ -48,7 +50,10 @@ export class OrdersService extends BaseService<Order> {
       user.balance = Number(user.balance) - createOrderDto.amount;
       await userRepo.save(user);
 
-      return order;
+      return {
+        message: APP_CONSTANTS.ORDERS.CREATED,
+        data: order,
+      };
     });
   }
 

@@ -1,6 +1,5 @@
-import { BaseDto } from "src/config/base.dto";
 
-export class CreateOrderDto extends BaseDto {
+export class CreateOrderDto {
 
     userId: number;
 

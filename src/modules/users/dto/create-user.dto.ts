@@ -1,6 +1,6 @@
-import { BaseDto } from "src/config/base.dto";
 
-export class CreateUserDto extends BaseDto {
+
+export class CreateUserDto {
 
     name: string;
 
